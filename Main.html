@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Fighter - Wall Integration</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; text-shadow: 2px 2px 4px #000; }
+    </style>
+</head>
+<body>
+
+<div id="ui">A/D to Move | W to Jump</div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Asset Loading ---
+const wallImg = new Image();
+wallImg.src = 'images/wall.jpg'; // Path to your file
+
+// --- Game Constants ---
+const WORLD_WIDTH = 5000;
+const GRAVITY = 0.8;
+const FRICTION = 0.85;
+const GROUND_OFFSET = 100; // Pixels from bottom
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const keys = {};
+
+const camera = {
+    x: 0,
+    follow(target) {
+        let targetX = target.x - canvas.width / 2 + target.width / 2;
+        this.x += (targetX - this.x) * 0.1;
+        // Constraints
+        if (this.x < 0) this.x = 0;
+        if (this.x > WORLD_WIDTH - canvas.width) this.x = WORLD_WIDTH - canvas.width;
+    }
+};
+
+const player = {
+    x: 300,
+    y: 0,
+    width: 60,
+    height: 100,
+    velX: 0,
+    velY: 0,
+    speed: 8,
+    jumpForce: -18,
+    grounded: false,
+
+    update() {
+        if (keys['d'] || keys['arrowright']) this.velX = this.speed;
+        else if (keys['a'] || keys['arrowleft']) this.velX = -this.speed;
+        else this.velX *= FRICTION;
+
+        if ((keys['w'] || keys['arrowup'] || keys[' ']) && this.grounded) {
+            this.velY = this.jumpForce;
+            this.grounded = false;
+        }
+
+        this.velY += GRAVITY;
+        this.x += this.velX;
+        this.y += this.velY;
+
+        if (this.x < 0) this.x = 0;
+        if (this.x > WORLD_WIDTH - this.width) this.x = WORLD_WIDTH - this.width;
+
+        const groundLevel = canvas.height - GROUND_OFFSET;
+        if (this.y + this.height > groundLevel) {
+            this.y = groundLevel - this.height;
+            this.velY = 0;
+            this.grounded = true;
+        }
+    },
+
+    draw() {
+        ctx.fillStyle = "black";
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.fillRect(this.x - camera.x, this.y, this.width, this.height);
+        ctx.shadowBlur = 0;
+    }
+};
+
+function drawBackground() {
+    const groundLevel = canvas.height - GROUND_OFFSET;
+
+    // 1. Draw Static Sky/Far Back (doesn't move)
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Draw your Wall with Parallax
+    // Moving the wall at 0.4 speed of the camera makes it look "behind"
+    const parallaxFactor = 0.4;
+    const wallX = -(camera.x * parallaxFactor);
+
+    // Tile the image if it's not as wide as the world
+    if (wallImg.complete) {
+        // Draw the image multiple times to cover the world width
+        for (let i = 0; i < WORLD_WIDTH; i += wallImg.width) {
+            ctx.drawImage(wallImg, i + wallX, groundLevel - wallImg.height);
+        }
+    }
+
+    // 3. Draw the Ground (Foreground - moves at full speed)
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0 - camera.x, groundLevel, WORLD_WIDTH, GROUND_OFFSET);
+}
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    player.update();
+    camera.follow(player);
+
+    drawBackground();
+    player.draw();
+
+    requestAnimationFrame(loop);
+}
+
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+loop();
+</script>
+</body>
+</html>
+
