@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARKFIST Menu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .container {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom right, #1a1a1a, #2d2d2d, #000000);
+            overflow: hidden;
+        }
+
+        .bg-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-content {
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        .title-section {
+            margin-bottom: 3rem;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+            font-family: serif;
+        }
+
+        .game-subtitle {
+            font-size: 0.75rem;
+            color: #d1d5db;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .menu-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .menu-item {
+            position: relative;
+            background: none;
+            border: none;
+            text-align: left;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+
+        .menu-item:hover {
+            color: #e5e7eb;
+        }
+
+        .menu-item.active {
+            color: white;
+            transform: translateX(0.75rem);
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+        }
+
+        .menu-indicator {
+            position: absolute;
+            left: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            background-color: white;
+            width: 0.5rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item.active .menu-indicator {
+            opacity: 1;
+            width: 1rem;
+        }
+
+        .version-text {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 2rem;
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        .gradient-overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 16rem;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.2), transparent);
+            pointer-events: none;
+        }
+
+        /* Responsive design */
+        @media (min-width: 640px) {
+            .menu-content {
+                padding-left: 3rem;
+            }
+
+            .title-section {
+                margin-bottom: 3rem;
+            }
+
+            .game-title {
+                font-size: 3rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .game-subtitle {
+                font-size: 0.875rem;
+            }
+
+            .menu-nav {
+                gap: 1.25rem;
+            }
+
+            .menu-item {
+                font-size: 1.25rem;
+            }
+
+            .menu-item.active {
+                transform: translateX(1rem);
+            }
+
+            .menu-indicator {
+                left: -2rem;
+            }
+
+            .menu-item.active .menu-indicator {
+                width: 1.5rem;
+            }
+
+            .version-text {
+                bottom: 2.5rem;
+                left: 3rem;
+                font-size: 0.875rem;
+            }
+
+            .gradient-overlay {
+                width: 20rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .menu-content {
+                padding-left: 4rem;
+            }
+
+            .title-section {
+                margin-bottom: 4rem;
+            }
+
+            .game-title {
+                font-size: 3.75rem;
+            }
+
+            .menu-nav {
+                gap: 1.5rem;
+            }
+
+            .menu-item {
+                font-size: 1.5rem;
+            }
+
+            .version-text {
+                bottom: 4rem;
+                left: 4rem;
+            }
+
+            .gradient-overlay {
+                width: 24rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Background overlay -->
+        <div class="bg-overlay"></div>
+        
+        <!-- Menu Container -->
+        <div class="menu-container">
+            <div class="menu-content">
+                <!-- Game Title -->
+                <div class="title-section">
+                    <h1 class="game-title">DARKFIST</h1>
+                    <p class="game-subtitle">Dead End</p>
+                </div>
+                
+                <!-- Menu Items -->
+                <nav class="menu-nav">
+                    <button class="menu-item active" data-index="0">
+                        <span class="menu-indicator"></span>
+                        New Game
+                    </button>
+                    <button class="menu-item" data-index="1">
+                        <span class="menu-indicator"></span>
+                        Load Game
+                    </button>
+                    <button class="menu-item" data-index="2">
+                        <span class="menu-indicator"></span>
+                        Options
+                    </button>
+                </nav>
+                
+                <!-- Version text -->
+                <div class="version-text">
+                    Version 1.04
+                </div>
+            </div>
+        </div>
+        
+        <!-- Decorative gradient overlay -->
+        <div class="gradient-overlay"></div>
+    </div>
+
+    <script>
+        const menuItems = document.querySelectorAll('.menu-item');
+        
+        menuItems.forEach((item) => {
+            item.addEventListener('click', () => {
+                menuItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+            
+            item.addEventListener('mouseenter', () => {
+                menuItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
