@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Fighter - Quarter Grass</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+        
+        canvas { 
+            display: block; 
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1; 
+        }
+
+        /* --- CSS GROUND CONTROL --- */
+        #ground-layer {
+            position: absolute;
+            bottom: 0px; 
+            left: 0;
+            width: 100%;
+            height: 120px; 
+            
+            /* Ensure no solid colors are visible */
+            background-color: transparent !important; 
+            
+            /* Updated Image Path */
+            background-image: url('images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png');
+            background-repeat: no-repeat; 
+            
+            /* Force the image to be exactly 25% of the screen width */
+            background-size: 25% 100%; 
+            
+            z-index: 10; 
+            pointer-events: none;
+        }
+
+        .controls {
+            position: absolute; bottom: 20px; width: 100%;
+            display: flex; justify-content: space-between;
+            padding: 0 30px; box-sizing: border-box; z-index: 20;
+        }
+        .btn {
+            width: 75px; height: 75px; 
+            background: rgba(50, 50, 50, 0.8);
+            border: 2px solid #fff; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+            pointer-events: auto; user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ground-layer"></div>
+
+<div class="controls">
+    <div style="display: flex; gap: 20px;">
+        <div class="btn" id="btnLeft">←</div>
+        <div class="btn" id="btnRight">→</div>
+    </div>
+    <div class="btn" id="btnJump">JUMP</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const groundDiv = document.getElementById('ground-layer');
+
+const wallImg = new Image();
+wallImg.src = 'images/wall.jpg';
+
+const WORLD_WIDTH = 5000;
+const GRAVITY = 0.8;
+const FRICTION = 0.85;
+
+let touchKeys = { left: false, right: false, jump: false };
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const camera = {
+    x: 0,
+    follow(target) {
+        let targetX = target.x - canvas.width / 2 + target.width / 2;
+        this.x += (targetX - this.x) * 0.1;
+        this.x = Math.max(0, Math.min(this.x, WORLD_WIDTH - canvas.width));
+    }
+};
+
+const player = {
+    x: 100, y: 0,
+    width: 50, height: 100,
+    velX: 0, velY: 0,
+    speed: 7, jumpForce: -16,
+    grounded: false,
+
+    update() {
+        if (touchKeys.right) this.velX = this.speed;
+        else if (touchKeys.left) this.velX = -this.speed;
+        else this.velX *= FRICTION;
+
+        if (touchKeys.jump && this.grounded) {
+            this.velY = this.jumpForce;
+            this.grounded = false;
+        }
+
+        this.velY += GRAVITY;
+        this.x += this.velX;
+        this.y += this.velY;
+
+        const groundHeight = groundDiv.offsetHeight;
+        const groundTop = canvas.height - groundHeight;
+
+        if (this.y + this.height > groundTop) {
+            this.y = groundTop - this.height;
+            this.velY = 0;
+            this.grounded = true;
+        }
+    },
+
+    draw() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(this.x - camera.x, this.y, this.width, this.height);
+    }
+};
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const groundHeight = groundDiv.offsetHeight;
+    const groundTop = canvas.height - groundHeight;
+
+    player.update();
+    camera.follow(player);
+
+    if (wallImg.complete) {
+        const wallX = -(camera.x * 0.4);
+        for (let i = 0; i < WORLD_WIDTH; i += wallImg.width) {
+            ctx.drawImage(wallImg, i + wallX, groundTop - wallImg.height);
+        }
+    }
+
+    player.draw();
+
+    // UPDATE GRASS POSITION
+    // Shifts the background image to simulate depth/scrolling
+    groundDiv.style.backgroundPosition = `${-camera.x}px bottom`;
+
+    requestAnimationFrame(loop);
+}
+
+const setupBtn = (id, key) => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); touchKeys[key] = true; });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); touchKeys[key] = false; });
+    }
+};
+setupBtn('btnLeft', 'left');
+setupBtn('btnRight', 'right');
+setupBtn('btnJump', 'jump');
+
+loop();
+</script>
+</body>
+</html>
+
