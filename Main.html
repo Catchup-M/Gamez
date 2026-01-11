@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Parallax Wall with Ground</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* 🔴 HARD-CODED GROUND STYLING */
+    #ground {
+      position: absolute;
+      left: 0;                 /* stick to left edge */
+      bottom: 0;               /* stick to bottom */
+      height: 25vh;            /* QUARTER of screen height */
+      width: auto;             /* keep image ratio */
+      z-index: 5;              /* above canvas */
+      pointer-events: none;    /* no interaction issues */
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- Ground Image -->
+<img
+  id="ground"
+  src="images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png"
+  alt="ground"
+/>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Wall image
+const wallImage = new Image();
+wallImage.src = 'images/wall.jpg';
+
+const cameraSpeed = 4;
+const parallaxFactor = 0.4;
+let wallX = 0;
+
+function update() {
+  wallX -= cameraSpeed * parallaxFactor;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!wallImage.complete) return;
+
+  // Scale wall to full height
+  const scale = canvas.height / wallImage.height;
+  const wallWidth = wallImage.width * scale;
+
+  // Clamp (NO repeating)
+  const minX = canvas.width - wallWidth;
+  wallX = Math.max(minX, Math.min(0, wallX));
+
+  ctx.drawImage(
+    wallImage,
+    wallX,
+    0,
+    wallWidth,
+    canvas.height
+  );
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+wallImage.onload = gameLoop;
+</script>
+
+</body>
+</html>
