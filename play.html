@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Fighter - Physical Ground</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #333; touch-action: none; }
+        canvas { display: block; }
+        .controls {
+            position: absolute; bottom: 20px; width: 100%;
+            display: flex; justify-content: space-between;
+            padding: 0 30px; box-sizing: border-box; z-index: 20;
+        }
+        .btn {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); border: 2px solid #fff;
+            color: white; display: flex; align-items: center; justify-content: center;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div style="display: flex; gap: 20px;">
+        <div class="btn" id="btnLeft">←</div>
+        <div class="btn" id="btnRight">→</div>
+    </div>
+    <div class="btn" id="btnJump">JUMP</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Load Images ---
+const groundImg = new Image();
+groundImg.src = 'images/ground.png';
+
+const wallImg = new Image();
+wallImg.src = 'images/wall.jpg';
+
+// --- Game Settings ---
+const WORLD_WIDTH = 5000;
+const GRAVITY = 0.8;
+let touchKeys = { left: false, right: false, jump: false };
+
+// --- The Ground "Physical" Object ---
+// This defines exactly where the grass is in the world
+const groundObject = {
+    x: 0,
+    y: 0, // Will be set in resize
+    width: 0, // Will be set to 25% of screen
+    height: 120 
+};
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    groundObject.width = canvas.width * 0.25; // Exactly a quarter
+    groundObject.y = canvas.height - groundObject.height;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const camera = {
+    x: 0,
+    follow(target) {
+        let tx = target.x - canvas.width / 2;
+        this.x += (tx - this.x) * 0.1;
+        this.x = Math.max(0, Math.min(this.x, WORLD_WIDTH - canvas.width));
+    }
+};
+
+const player = {
+    x: 100, y: 0,
+    width: 40, height: 80,
+    velX: 0, velY: 0,
+    speed: 6,
+    jumpForce: -15,
+    grounded: false,
+
+    update() {
+        if (touchKeys.right) this.velX = this.speed;
+        else if (touchKeys.left) this.velX = -this.speed;
+        else this.velX *= 0.8;
+
+        if (touchKeys.jump && this.grounded) {
+            this.velY = this.jumpForce;
+            this.grounded = false;
+        }
+
+        this.velY += GRAVITY;
+        this.x += this.velX;
+        this.y += this.velY;
+
+        // --- REAL COLLISION LOGIC ---
+        // Check if player is horizontally within the grass quarter (0 to groundObject.width)
+        const isOverGrass = (this.x + this.width > groundObject.x && this.x < groundObject.x + groundObject.width);
+
+        if (isOverGrass && (this.y + this.height > groundObject.y)) {
+            this.y = groundObject.y - this.height;
+            this.velY = 0;
+            this.grounded = true;
+        } else {
+            this.grounded = false;
+        }
+
+        // Prevent falling off the bottom of the screen for now (optional)
+        if (this.y > canvas.height) {
+            this.x = 100; this.y = 0; // Reset if you fall off the world
+        }
+    },
+
+    draw() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(this.x - camera.x, this.y, this.width, this.height);
+    }
+};
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    player.update();
+    camera.follow(player);
+
+    // 1. Draw Wall
+    if (wallImg.complete) {
+        let wx = -(camera.x * 0.4);
+        for(let i=0; i<WORLD_WIDTH; i+= wallImg.width) {
+            ctx.drawImage(wallImg, i + wx, groundObject.y - wallImg.height);
+        }
+    }
+
+    // 2. Draw Player (Drawn BEFORE grass so they are behind it)
+    player.draw();
+
+    // 3. Draw Grass (Drawn AFTER player so feet are covered)
+    if (groundImg.complete) {
+        // Draw the image only for the first quarter
+        ctx.drawImage(groundImg, groundObject.x - camera.x, groundObject.y, groundObject.width, groundObject.height);
+    }
+
+    requestAnimationFrame(loop);
+}
+
+const setupBtn = (id, key) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); touchKeys[key] = true; });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); touchKeys[key] = false; });
+};
+setupBtn('btnLeft', 'left'); setupBtn('btnRight', 'right'); setupBtn('btnJump', 'jump');
+
+loop();
+</script>
+</body>
+</html>
+
