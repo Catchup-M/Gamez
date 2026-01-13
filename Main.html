@@ -24,6 +24,19 @@
       inset: 0;
       z-index: 1;
     }
+    
+  /* Allows full CSS manipulation in DevTools */
+  img#character-img {
+    display: block;       /* make it visible */
+    position: absolute;   /* can move anywhere */
+    top: 0;               /* initial position, adjustable via CSS */
+    left: 50px;           /* example */
+    transform: translateY(9px); /* you can adjust this freely */
+    pointer-events: none; /* so it won't block clicks */
+    z-index: 9999;        /* on top for visibility in DevTools */
+    opacity: 0.5;         /* optional, for seeing through */
+  }
+
 
     /* =====================
        GROUND
