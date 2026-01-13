@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Landscape Game – Parallax + Smooth Joystick</title>
+  <meta
+    name="viewport"
+    content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* CANVAS WRAPPER */
+    .game-canvas-wrapper {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      /* HARD-CODED DOWN SHIFT */
+      transform: translateY(15px); /* move character slightly down */
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* =====================
+       GROUND
+       ===================== */
+    #ground {
+      position: absolute;
+      left: 0;
+      bottom: -5px;
+      height: 12vw;
+      min-height: 80px;
+      max-height: 140px;
+      width: auto;
+      z-index: 5; /* ABOVE character */
+      pointer-events: none;
+    }
+
+    /* =====================
+       RIGHT SIDE BUTTONS
+       ===================== */
+    .game-btn {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      z-index: 10;
+      touch-action: none;
+    }
+
+    #btn-top {
+      right: 15px;
+      top: 39%;
+      width: 53px;
+      height: 53px;
+    }
+
+    #btn-center {
+      right: 90px;
+      top: 70%;
+      transform: translateY(-50%);
+      width: 47px;
+      height: 47px;
+    }
+
+    #btn-bottom {
+      right: 15px;
+      bottom: 20px;
+      width: 64px;
+      height: 64px;
+    }
+
+    /* =====================
+       JOYSTICK
+       ===================== */
+    #joystick-base {
+      position: absolute;
+      left: 20px;
+      bottom: 30px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      z-index: 10;
+      touch-action: none;
+    }
+
+    #joystick-stick {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: transform 0.08s ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- CANVAS WRAPPER FOR HARD-CODED DOWN SHIFT -->
+  <div class="game-canvas-wrapper">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <!-- GROUND IMAGE -->
+  <img
+    id="ground"
+    src="images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png"
+    alt="Ground"
+  />
+
+  <!-- RIGHT CONTROL BUTTONS -->
+  <div id="btn-top" class="game-btn"></div>
+  <div id="btn-center" class="game-btn"></div>
+  <div id="btn-bottom" class="game-btn"></div>
+
+  <!-- LEFT JOYSTICK -->
+  <div id="joystick-base">
+    <div id="joystick-stick"></div>
+  </div>
+
+  <script>
+    /* =====================
+       CANVAS SETUP
+       ===================== */
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    /* =====================
+       WALL PARALLAX
+       ===================== */
+    const wallImage = new Image();
+    wallImage.src = "images/wall.jpg";
+
+    const cameraSpeed = 4;
+    const parallaxFactor = 0.3;
+    let wallOffsetX = 0;
+
+    /* =====================
+       CHARACTER (STATIC)
+       SAFE SINGLE FRAME
+       ===================== */
+    const characterImg = new Image();
+    characterImg.src = "images/Character1.png";
+
+    const FRAME_WIDTH = 110;  // crop only top-left sprite
+    const FRAME_HEIGHT = 110;
+
+    const character = {
+      x: 0,       // left edge
+      y: 0,
+      width: 90,
+      height: 90
+    };
+
+    function update() {
+      if (!wallImage.complete) return;
+
+      const virtualWallWidth = canvas.width * 1.5;
+      wallOffsetX -= cameraSpeed * parallaxFactor;
+
+      const maxOffset = 0;
+      const minOffset = canvas.width - virtualWallWidth;
+      wallOffsetX = Math.max(minOffset, Math.min(maxOffset, wallOffsetX));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!wallImage.complete) return;
+
+      ctx.imageSmoothingEnabled = true;
+
+      const virtualWallWidth = canvas.width * 1.5;
+
+      /* BACKGROUND */
+      ctx.drawImage(
+        wallImage,
+        wallOffsetX,
+        0,
+        virtualWallWidth,
+        canvas.height
+      );
+
+      /* CHARACTER POSITION (BEHIND GROUND) */
+      const groundHeight = Math.max(
+        80,
+        Math.min(140, canvas.width * 0.12)
+      );
+
+      // HARD-CODED vertical offset (push down more)
+      const offsetY = 15; // adjust this to move character down
+
+      character.y =
+        canvas.height - groundHeight - character.height + 10 + offsetY;
+
+      /* DRAW ONLY TOP-LEFT SPRITE */
+      ctx.drawImage(
+        characterImg,
+        0, 0,
+        FRAME_WIDTH,
+        FRAME_HEIGHT,
+        character.x,
+        character.y,
+        character.width,
+        character.height
+      );
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    wallImage.onload = gameLoop;
+
+    /* =====================
+       JOYSTICK LOGIC
+       ===================== */
+    const base = document.getElementById("joystick-base");
+    const stick = document.getElementById("joystick-stick");
+
+    let dragging = false;
+    let joystickValueX = 0;
+    const radius = 40;
+
+    function onStart() {
+      dragging = true;
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+
+      const touch = e.touches ? e.touches[0] : e;
+      const rect = base.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+
+      let dx = touch.clientX - centerX;
+      dx = Math.max(-radius, Math.min(radius, dx));
+
+      joystickValueX = dx / radius;
+      stick.style.transform =
+        `translate(calc(-50% + ${dx}px), -50%)`;
+    }
+
+    function onEnd() {
+      dragging = false;
+      joystickValueX = 0;
+      stick.style.transform = "translate(-50%, -50%)";
+    }
+
+    base.addEventListener("mousedown", onStart);
+    base.addEventListener("touchstart", onStart);
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove);
+
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchend", onEnd);
+  </script>
+
+</body>
+</html>
