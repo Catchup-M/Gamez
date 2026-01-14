@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Landscape Game – Running Animation + Right Movement</title>
+  <meta
+    name="viewport"
+    content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* =====================
+       GROUND
+       ===================== */
+    #ground1,
+    #ground2 {
+      position: absolute;
+      bottom: -9px;
+      height: 12vw;
+      min-height: 80px;
+      max-height: 140px;
+      width: auto;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* =====================
+       RIGHT BUTTONS
+       ===================== */
+    .game-btn {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.4);
+      z-index: 10;
+    }
+
+    #btn-top {
+      right: 15px;
+      top: 39%;
+      width: 53px;
+      height: 53px;
+    }
+
+    #btn-center {
+      right: 90px;
+      top: 70%;
+      transform: translateY(-50%);
+      width: 47px;
+      height: 47px;
+    }
+
+    #btn-bottom {
+      right: 15px;
+      bottom: 20px;
+      width: 64px;
+      height: 64px;
+    }
+
+    /* =====================
+       JOYSTICK
+       ===================== */
+    #joystick-base {
+      position: absolute;
+      left: 20px;
+      bottom: 30px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 2px solid rgba(255,255,255,0.25);
+      z-index: 10;
+      touch-action: none;
+    }
+
+    #joystick-stick {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: transform 0.08s ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Static ground tiles -->
+  <img
+    id="ground1"
+    src="images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png"
+    alt="Ground"
+  />
+  <img
+    id="ground2"
+    src="images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png"
+    alt="Ground"
+  />
+
+  <!-- Buttons -->
+  <div id="btn-top" class="game-btn"></div>
+  <div id="btn-center" class="game-btn"></div>
+  <div id="btn-bottom" class="game-btn"></div>
+
+  <!-- Joystick -->
+  <div id="joystick-base">
+    <div id="joystick-stick"></div>
+  </div>
+
+  <script>
+    /* =====================
+       CANVAS SETUP
+       ===================== */
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    /* =====================
+       BACKGROUND
+       ===================== */
+    const wallImage = new Image();
+    wallImage.src = "images/wall.jpg";
+
+    /* =====================
+       CHARACTER
+       ===================== */
+    const characterImg = new Image();
+    characterImg.src = "images/Character1.png";
+
+    const FRAME_WIDTH = 110;
+    const FRAME_HEIGHT = 110;
+
+    const character = {
+      x: 50,
+      y: 0,
+      width: 90,
+      height: 90
+    };
+
+    const GRASS_TOP_OFFSET = 20;
+    let manualYOffset = 28;
+
+    /* =====================
+       ANIMATION FRAMES (RUN)
+       ===================== */
+    const RUN_FRAMES = [3,4,5,6]; // green marked frames
+    let currentFrameIndex = 0;
+    let frameTimer = 0;
+    const FRAME_DELAY = 6;
+    let isRunning = false;
+
+    function animate() {
+      if (!isRunning) {
+        currentFrameIndex = 0;
+        return RUN_FRAMES[0];
+      }
+
+      frameTimer++;
+      if(frameTimer >= FRAME_DELAY){
+        frameTimer = 0;
+        currentFrameIndex = (currentFrameIndex + 1) % RUN_FRAMES.length;
+      }
+
+      return RUN_FRAMES[currentFrameIndex];
+    }
+
+    /* =====================
+       POSITION GROUNDS
+       ===================== */
+    const ground1 = document.getElementById("ground1");
+    const ground2 = document.getElementById("ground2");
+
+    function positionGrounds() {
+      ground1.style.left = "0px";
+      ground2.style.left = ground1.offsetWidth + "px";
+    }
+
+    if (ground1.complete && ground2.complete) {
+      positionGrounds();
+    } else {
+      ground1.onload = positionGrounds;
+      ground2.onload = positionGrounds;
+    }
+
+    /* =====================
+       WORLD MOVEMENT
+       ===================== */
+    let worldX = 0;
+    const WORLD_SPEED = 3;
+    const WORLD_LEFT_LIMIT = 0; // do not cross first ground's left edge
+
+    /* =====================
+       JOYSTICK (VISUAL + CONTROL)
+       ===================== */
+    const base = document.getElementById("joystick-base");
+    const stick = document.getElementById("joystick-stick");
+
+    let dragging = false;
+    let joystickValueX = 0;
+    const radius = 40;
+
+    function onStart() {
+      dragging = true;
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+
+      const touch = e.touches ? e.touches[0] : e;
+      const rect = base.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+
+      let dx = touch.clientX - centerX;
+      dx = Math.max(-radius, Math.min(radius, dx));
+
+      joystickValueX = dx / radius;
+
+      // VISUAL joystick movement only
+      stick.style.transform = `translate(calc(-50% + ${dx}px), -50%)`;
+    }
+
+    function onEnd() {
+      dragging = false;
+      joystickValueX = 0;
+      stick.style.transform = "translate(-50%, -50%)";
+    }
+
+    base.addEventListener("mousedown", onStart);
+    base.addEventListener("touchstart", onStart);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchend", onEnd);
+
+    /* =====================
+       GAME LOOP
+       ===================== */
+    function update() {
+      // Only move world to the right
+      if (joystickValueX > 0.15) {
+        isRunning = true;
+        worldX -= WORLD_SPEED;
+
+        // 🔒 Lock left edge
+        if(worldX > WORLD_LEFT_LIMIT){
+          worldX = WORLD_LEFT_LIMIT;
+        }
+      } else {
+        isRunning = false;
+      }
+
+      // Apply world transform
+      ground1.style.transform = `translateX(${worldX}px)`;
+      ground2.style.transform = `translateX(${worldX}px)`;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if(!wallImage.complete || !characterImg.complete) return;
+
+      ctx.drawImage(wallImage, 0, 0, canvas.width, canvas.height);
+
+      const groundHeight = Math.max(80, Math.min(140, canvas.width * 0.12));
+
+      character.y = canvas.height - groundHeight + GRASS_TOP_OFFSET - character.height + manualYOffset;
+
+      const frameX = animate() * FRAME_WIDTH;
+
+      ctx.drawImage(
+        characterImg,
+        frameX, 0,
+        FRAME_WIDTH, FRAME_HEIGHT,
+        character.x,
+        character.y,
+        character.width,
+        character.height
+      );
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    wallImage.onload = gameLoop;
+  </script>
+
+</body>
+</html>
