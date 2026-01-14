@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Landscape Game</title>
+  <meta
+    name="viewport"
+    content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* GROUND */
+    #ground1, #ground2 {
+      position: absolute;
+      bottom: -9px;
+      height: 12vw;
+      min-height: 80px;
+      max-height: 140px;
+      width: auto;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* JOYSTICK */
+    #joystick-base {
+      position: absolute;
+      left: 20px;
+      bottom: 30px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 2px solid rgba(255,255,255,0.25);
+      z-index: 10;
+      touch-action: none;
+    }
+
+    #joystick-stick {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: transform 0.08s ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- TWO GROUNDS -->
+  <img id="ground1" src="images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png" />
+  <img id="ground2" src="images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png" />
+
+  <!-- JOYSTICK -->
+  <div id="joystick-base">
+    <div id="joystick-stick"></div>
+  </div>
+
+  <script>
+    /* CANVAS */
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    /* BACKGROUND */
+    const wallImage = new Image();
+    wallImage.src = "images/wall.jpg";
+
+    /* CHARACTER */
+    const characterImg = new Image();
+    characterImg.src = "images/Character1.png";
+
+    const character = {
+      x: 50,
+      y: 0,
+      width: 90,
+      height: 90
+    };
+
+    const FRAME_WIDTH = 110;
+    const FRAME_HEIGHT = 110;
+    const GRASS_TOP_OFFSET = 20;
+    let manualYOffset = 28;
+
+    /* POSITION SECOND GROUND */
+    const ground1 = document.getElementById("ground1");
+    const ground2 = document.getElementById("ground2");
+
+    ground1.onload = () => {
+      ground1.style.left = "0px";
+      ground2.style.left = ground1.width + "px";
+    };
+
+    /* JOYSTICK (VISUAL ONLY) */
+    const base = document.getElementById("joystick-base");
+    const stick = document.getElementById("joystick-stick");
+
+    let dragging = false;
+    const radius = 40;
+
+    function onStart() {
+      dragging = true;
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+
+      const touch = e.touches ? e.touches[0] : e;
+      const rect = base.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+
+      let dx = touch.clientX - centerX;
+      dx = Math.max(-radius, Math.min(radius, dx));
+
+      stick.style.transform =
+        `translate(calc(-50% + ${dx}px), -50%)`;
+    }
+
+    function onEnd() {
+      dragging = false;
+      stick.style.transform = "translate(-50%, -50%)";
+    }
+
+    base.addEventListener("mousedown", onStart);
+    base.addEventListener("touchstart", onStart);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchend", onEnd);
+
+    /* GAME LOOP (STATIC WORLD) */
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!wallImage.complete || !characterImg.complete) return;
+
+      ctx.drawImage(wallImage, 0, 0, canvas.width, canvas.height);
+
+      const groundHeight = Math.max(
+        80,
+        Math.min(140, canvas.width * 0.12)
+      );
+
+      character.y =
+        canvas.height - groundHeight +
+        GRASS_TOP_OFFSET -
+        character.height +
+        manualYOffset;
+
+      ctx.drawImage(
+        characterImg,
+        0, 0,
+        FRAME_WIDTH, FRAME_HEIGHT,
+        character.x,
+        character.y,
+        character.width,
+        character.height
+      );
+    }
+
+    function loop() {
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    wallImage.onload = loop;
+  </script>
+
+</body>
+</html>
