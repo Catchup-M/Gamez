@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Landscape Rotated Ground</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+<style>
+  body {
+    margin: 0;
+    background: #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  canvas {
+    background: #eaeaea;
+    border: 2px solid #000;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// ground settings
+const ground = {
+  x: 0,
+  y: 300,
+  width: 900,
+  height: 80,
+  rotation: -5 * Math.PI / 180 // -5 degrees
+};
+
+function drawGround() {
+  ctx.save(); // VERY IMPORTANT
+
+  // move origin to ground position
+  ctx.translate(ground.x, ground.y);
+
+  // rotate canvas
+  ctx.rotate(ground.rotation);
+
+  // draw ground
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, ground.width, ground.height);
+
+  ctx.restore(); // RESET canvas
+}
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGround();
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
