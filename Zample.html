@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Floor and Wall</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    function CanvasFloorWall() {
+      return (
+        <div className="w-full h-screen flex flex-col">
+          {/* Ash White Wall */}
+          <div className="flex-grow bg-gray-200"></div>
+          
+          {/* Ground Footer with Image */}
+          <div className="h-32 bg-cover bg-center bg-no-repeat" style={{backgroundImage: "url('images/file_00000000ba6471f4917611ec1970cd28-removebg-preview.png')"}}></div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<CanvasFloorWall />, document.getElementById('root'));
+  </script>
+</body>
+</html>
